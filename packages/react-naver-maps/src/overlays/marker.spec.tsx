@@ -1,18 +1,18 @@
-import { render, waitFor } from '@testing-library/react';
-import omit from 'lodash.omit';
-import { ReactElement, Suspense } from 'react';
+import { render, waitFor } from "@testing-library/react";
+import omit from "lodash.omit";
+import { ReactElement, Suspense } from "react";
 
-import { NaverMapContext } from '../contexts/naver-map';
-import { Marker } from './marker';
+import { NaverMapContext } from "../contexts/naver-map";
+import { Marker } from "./marker";
 
 const map = {} as naver.maps.Map;
 function renderOverlay(overlay: ReactElement) {
   return render(overlay, {
-    wrapper: ({ children }) => (<NaverMapContext.Provider value={map}>
-      <Suspense fallback={null}>
-        {children}
-      </Suspense>
-    </NaverMapContext.Provider>),
+    wrapper: ({ children }) => (
+      <NaverMapContext.Provider value={map}>
+        <Suspense fallback={null}>{children}</Suspense>
+      </NaverMapContext.Provider>
+    ),
   });
 }
 const mockPosition = { equals: jest.fn(() => false) };
@@ -20,7 +20,9 @@ let options = {} as naver.maps.MarkerOptions;
 const mockMethods = {
   getMap: jest.fn(),
   setMap: jest.fn(),
-  getOptions: jest.fn((key: keyof naver.maps.MarkerOptions) => Object.assign({ [key]: options[key] })),
+  getOptions: jest.fn((key: keyof naver.maps.MarkerOptions) =>
+    Object.assign({ [key]: options[key] }),
+  ),
   setOptions: jest.fn((opt: any) => {
     Object.assign(options, opt, { position: mockPosition });
   }),
@@ -32,16 +34,16 @@ const mockMarker = jest.fn().mockImplementation((opt) => {
   return mockMethods;
 });
 
-describe('<Marker />', () => {
+describe("<Marker />", () => {
   beforeEach(() => {
     options = {};
     mockMarker.mockClear();
-    Object.values(mockMethods).forEach(mock => mock.mockClear());
+    Object.values(mockMethods).forEach((mock) => mock.mockClear());
     // @ts-expect-error mocking navermaps client loader
     window.naver = { maps: { Marker: mockMarker } };
   });
 
-  it('should currectly handle options without props', async () => {
+  it("should currectly handle options without props", async () => {
     const { rerender, unmount } = renderOverlay(<Marker />);
     await waitFor(() => expect(window.naver.maps).toBeTruthy());
 
@@ -57,35 +59,46 @@ describe('<Marker />', () => {
     expect(mockMethods.setMap).toBeCalledWith(null);
   });
 
-  it('should currectly handle options with props', () => {
+  it("should currectly handle options with props", () => {
     const position = {} as naver.maps.Point;
     const animation = 0;
-    const icon = '';
+    const icon = "";
+    const size = {} as naver.maps.Size;
+    const origin = {} as naver.maps.Point;
+    const anchor = {} as naver.maps.Point;
     const shape = {} as naver.maps.MarkerShape;
-    const title = 'title';
-    const cursor = '';
+    const title = "title";
+    const cursor = "";
     const clickable = true;
     const draggable = true;
     const visible = true;
     const zIndex = 0;
 
-    const { rerender } = renderOverlay(<Marker
-      position={position}
-      animation={animation}
-      icon={icon}
-      shape={shape}
-      title={title}
-      cursor={cursor}
-      clickable={clickable}
-      draggable={draggable}
-      visible={visible}
-      zIndex={zIndex}
-    />);
+    const { rerender } = renderOverlay(
+      <Marker
+        position={position}
+        animation={animation}
+        icon={icon}
+        size={size}
+        origin={origin}
+        anchor={anchor}
+        shape={shape}
+        title={title}
+        cursor={cursor}
+        clickable={clickable}
+        draggable={draggable}
+        visible={visible}
+        zIndex={zIndex}
+      />,
+    );
 
     expect(mockMethods.setMap).toBeCalledWith(map);
-    expect(omit(options, ['position'])).toEqual({
+    expect(omit(options, ["position"])).toEqual({
       animation,
       icon,
+      size,
+      origin,
+      anchor,
       shape,
       title,
       cursor,
@@ -96,39 +109,48 @@ describe('<Marker />', () => {
     });
 
     const diffPosition1 = {} as naver.maps.Coord;
-    const diffTitle1 = 'title1';
+    const diffTitle1 = "title1";
     const sameClickable1 = true;
 
-    rerender(<Marker position={diffPosition1} title={diffTitle1} clickable={sameClickable1} />);
+    rerender(
+      <Marker
+        position={diffPosition1}
+        title={diffTitle1}
+        clickable={sameClickable1}
+      />,
+    );
     expect(mockMethods.setPosition).toBeCalledWith(diffPosition1);
     expect(mockMethods.setOptions).toBeCalledWith({ title: diffTitle1 });
   });
 
-  it('should ignore change when uncontrolled props is set', () => {
+  it("should ignore change when uncontrolled props is set", () => {
     const position = {} as naver.maps.Point;
-    const title = 'title';
+    const title = "title";
 
-    const { rerender } = renderOverlay(<Marker
-      defaultPosition={position}
-      title={title}
-    />);
+    const { rerender } = renderOverlay(
+      <Marker defaultPosition={position} title={title} />,
+    );
 
     const position1 = {} as naver.maps.Coord;
-    const title1 = 'title1';
+    const title1 = "title1";
 
     // position, defaultPosition 어느것이 변경되더라도 position이 변경되지 않아야한다.
     const prevCallCount = mockMethods.setPosition.mock.calls.length;
-    rerender(<Marker defaultPosition={position1} position={position1} title={title1} />);
+    rerender(
+      <Marker
+        defaultPosition={position1}
+        position={position1}
+        title={title1}
+      />,
+    );
     expect(prevCallCount).toBe(mockMethods.setPosition.mock.calls.length);
     expect(mockMethods.setOptions).toBeCalledWith({ title: title1 });
   });
 
-  it('should ignore position change when position is equal', () => {
+  it("should ignore position change when position is equal", () => {
     const position = {} as naver.maps.Point;
 
-    const { rerender } = renderOverlay(<Marker
-      position={position}
-    />);
+    const { rerender } = renderOverlay(<Marker position={position} />);
 
     const prevCallCount = mockMethods.setPosition.mock.calls.length;
     mockPosition.equals.mockImplementationOnce(() => true);
